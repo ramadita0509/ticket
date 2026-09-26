@@ -1,0 +1,17 @@
+{
+  "name": "ticket",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api": "npm run dev -w @ticket/api",
+    "mobile": "npm run start -w @ticket/mobile",
+    "web": "npm run web -w @ticket/mobile",
+    "build:shared": "npm run build -w @ticket/shared"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
