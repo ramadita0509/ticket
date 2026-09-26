@@ -1,15 +1,15 @@
 {
-  "name": "ticket",
+  "name": "el-wafa-travel",
   "private": true,
   "workspaces": [
-    "apps/*",
-    "packages/*"
+    "apps/*"
   ],
   "scripts": {
-    "api": "npm run dev -w @ticket/api",
-    "mobile": "npm run start -w @ticket/mobile",
-    "web": "npm run web -w @ticket/mobile",
-    "build:shared": "npm run build -w @ticket/shared"
+    "dev": "npm run dev -w @el-wafa-travel/web-booking",
+    "booking": "npm run booking -w @el-wafa-travel/web-booking",
+    "build": "npm run build -w @el-wafa-travel/web-booking",
+    "start": "npm run start -w @el-wafa-travel/web-booking",
+    "lint": "npm run lint -w @el-wafa-travel/web-booking"
   },
   "engines": {
     "node": ">=20"

@@ -1,0 +1,131 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  phone     String?
+  role      String    @default("USER")
+  bookings  Booking[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+model Booking {
+  id               String         @id @default(cuid())
+  bookingReference String?        @unique
+  provider         String         @default("TRAVELPORT")
+  totalAmount      Float
+  currency         String         @default("IDR")
+  status           String         @default("PENDING_PAYMENT")
+  paymentToken     String?
+  origin           String
+  destination      String
+  departureDate    DateTime
+  returnDate       DateTime?
+  cabinClass       String         @default("ECONOMY")
+  contactEmail     String?
+  contactPhone     String?
+  rawOfferJson     String?
+  pricedOfferJson  String?
+  ticketPdfPath    String?
+  userId           String?
+  user             User?          @relation(fields: [userId], references: [id])
+  passengers       Passenger[]
+  segments         FlightSegment[]
+  transactions     Transaction[]
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([status])
+  @@index([userId])
+}
+
+model Passenger {
+  id           String   @id @default(cuid())
+  bookingId    String
+  booking      Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  title        String
+  firstName    String
+  lastName     String
+  type         String   @default("ADULT")
+  idNumber     String?
+  dateOfBirth  DateTime?
+  nationality  String?
+  ticketNumber String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([bookingId])
+}
+
+model FlightSegment {
+  id               String   @id @default(cuid())
+  bookingId        String
+  booking          Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sequence         Int
+  airlineCode      String
+  flightNumber     String
+  departureAirport String
+  arrivalAirport   String
+  departureTime    DateTime
+  arrivalTime      DateTime
+  cabinClass       String?
+  createdAt        DateTime @default(now())
+
+  @@index([bookingId])
+}
+
+model Transaction {
+  id             String   @id @default(cuid())
+  bookingId      String
+  booking        Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  paymentGateway String   @default("MIDTRANS")
+  transactionId  String?  @unique
+  status         String   @default("PENDING")
+  amount         Float
+  currency       String   @default("IDR")
+  rawResponse    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([bookingId])
+}
+
+// Configurable Umroh / promo flyer content for home + admin
+model HomeCampaign {
+  id             String   @id @default(cuid())
+  title          String
+  periodLabel    String
+  airlineName    String
+  partnerBanner  String?
+  slogan         String?
+  heroImageUrl   String?
+  airlineLogoUrl String?
+  packagesJson   String   @default("[]")
+  termsJson      String   @default("[]")
+  contactJson    String   @default("{}")
+  published      Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([published, sortOrder])
+}
+
+// Separate from Umroh campaigns — "Destinasi populer" home section
+model HomeDestinationSection {
+  id        String   @id @default("home-destinations")
+  eyebrow   String   @default("Destinasi populer")
+  title     String   @default("Penawaran siap berangkat")
+  dealsJson String   @default("[]")
+  published Boolean  @default(true)
+  updatedAt DateTime @updatedAt
+}

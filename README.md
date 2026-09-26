@@ -1,89 +1,43 @@
-# Ticket — MVP Search + Harga
+# El Wafa Travel — Flight Booking (Travelport)
 
-Website / aplikasi pencarian tiket pesawat sederhana. End user melihat harga lewat app kita; booking final di-handoff ke partner (MVP A).
+Next.js booking app terintegrasi **Travelport TripServices Flights** (REST/JSON): search → price → book → bayar Midtrans → ticket.
 
-## Arsitektur
+## Stack
 
-- `apps/mobile` — Expo (Web + iOS + Android), Expo Router
-- `apps/api` — Hono BFF (API key Amadeus tidak pernah ke client)
-- `packages/shared` — tipe `FlightOffer` + skema Zod
+- `apps/web-booking` — Next.js App Router, TypeScript, Tailwind, Prisma (SQLite)
+- GDS: Travelport TripServices (`TRAVELPORT_MODE=mock` | `live`)
+- Payment: Midtrans Snap (mock settle bila key kosong)
+- Queue: BullMQ (+ Redis) atau in-process; e-ticket PDF + email
 
-Tanpa kredensial Amadeus, API mengembalikan **demo offers** agar UI tetap bisa dikembangkan.
-
-## Setup cepat
+## Setup
 
 ```bash
 npm install
-cp apps/api/.env.example apps/api/.env
-cp apps/mobile/.env.example apps/mobile/.env
-
-# Terminal 1 — API
-npm run api
-
-# Terminal 2 — Web / Expo
-npm run web
-# atau: npm run mobile
+cp apps/web-booking/.env.example apps/web-booking/.env
+cd apps/web-booking && npx prisma db push && npm run db:seed && cd ../..
+npm run booking
 ```
 
-API default: `http://localhost:8787`  
-Health check: `GET /health`
+Buka [http://localhost:3000](http://localhost:3000).
 
-### Endpoint
+Detail: [`apps/web-booking/README.md`](apps/web-booking/README.md).
 
-| Method | Path | Keterangan |
-|--------|------|------------|
-| GET | `/health` | Status + flag Amadeus |
-| GET | `/airports/suggest?q=` | Autocomplete bandara |
-| POST | `/flights/search` | Body: `origin`, `destination`, `departureDate`, `adults` |
-| GET | `/flights/offers/:id` | Detail offer dari cache |
+Admin home promo: [http://localhost:3000/admin](http://localhost:3000/admin) (`ADMIN_PASSWORD` di `.env`).
 
-## Amadeus sandbox
+## Travelport
 
-1. Daftar di [Amadeus for Developers](https://developers.amadeus.com/)
-2. Buat app → dapatkan **API Key** (Client ID) & **API Secret**
-3. Isi di `apps/api/.env`:
+| Mode | Env |
+|------|-----|
+| Mock (default) | `TRAVELPORT_MODE=mock` — fixture multi-airline, tanpa kredensial |
+| Live | `TRAVELPORT_MODE=live` + OAuth / Access Group / PCC |
 
-```env
-AMADEUS_CLIENT_ID=your_key
-AMADEUS_CLIENT_SECRET=your_secret
-AMADEUS_HOSTNAME=test.api.amadeus.com
-```
+Docs: [TripServices Flights](https://developer.travelport.com/apis/flights)
 
-4. Restart `npm run api` — response search tidak lagi bertanda `demo: true`
+## Roadmap
 
-Catatan:
-
-- Sandbox punya rate limit dan data uji; rute/harga bisa beda dari produksi.
-- Harga bersifat indikatif sampai booking di partner selesai.
-- Field `bookingUrl` di offer sengaja `null` dari Amadeus; isi lewat adapter partner nanti.
-
-## Handoff partner (nanti)
-
-Implementasikan `FlightProvider` baru (atau perluas mapper) yang mengisi `bookingUrl`. UI layar **Handoff** sudah membuka URL lewat `expo-web-browser` bila ada.
-
-## App Store / Play Store (checklist)
-
-1. Buat akun [Apple Developer](https://developer.apple.com/) & [Google Play Console](https://play.google.com/console)
-2. Install EAS CLI: `npm i -g eas-cli` lalu `eas login`
-3. Di `apps/mobile`: `eas init` — ganti `extra.eas.projectId` di `app.json`
-4. Pastikan identitas:
-   - iOS `bundleIdentifier`: `com.ticket.app`
-   - Android `package`: `com.ticket.app`
-5. Siapkan aset: ikon 1024×1024, splash, privacy policy URL (wajib store)
-6. Build:
-   - `eas build --platform ios --profile production`
-   - `eas build --platform android --profile production`
-7. Submit:
-   - `eas submit --platform ios`
-   - `eas submit --platform android`
-8. Di listing sebutkan: harga dari API pihak ketiga; pembayaran/booking via partner (belum in-app purchase tiket)
-
-Profil EAS sudah ada di [`apps/mobile/eas.json`](apps/mobile/eas.json) (`development` / `preview` / `production`).
-
-## Deploy API
-
-Deploy `apps/api` ke Railway / Fly.io / VPS. Set env Amadeus di host. Update `EXPO_PUBLIC_API_URL` di build mobile ke URL publik API (HTTPS).
-
-## Lisensi
-
-Private / internal MVP.
+1. Search (mock/live) — **done**
+2. Air price / fare rules — **done**
+3. Workbench booking + PNR — **done**
+4. Midtrans + webhook — **done**
+5. BullMQ ticketing — **done**
+6. E-ticket PDF + email — **done**
